@@ -1,15 +1,11 @@
 <p align="center">
-  <a href="https://librechat.ai">
-    <img src="client/public/assets/logo.svg" height="256">
-  </a>
+  <img src="client/public/assets/logo.svg" height="200">
   <h1 align="center">
-    <a href="https://librechat.ai">LibreChat</a>
+    <strong>ra1</strong>
   </h1>
-</p>
-
-<p align="center">
-  <strong>English</strong> ·
-  <a href="README.zh.md">中文</a>
+  <p align="center">
+    <em>The Autonomous, Extensible Multi-Model AI Platform</em>
+  </p>
 </p>
 
 <p align="center">
@@ -179,11 +175,11 @@ Read the [full v0.8.8 changelog](https://www.librechat.ai/changelog/v0.8.8).
 
 [For a thorough review of our features, see our docs here](https://docs.librechat.ai/) 📚
 
-## 🪶 All-In-One AI Conversations with LibreChat
+## 🪶 All-In-One AI Conversations with ra1
 
-LibreChat is a self-hosted AI chat platform that unifies all major AI providers in a single, privacy-focused interface.
+ra1 is a self-hosted AI operating workspace that unifies all major AI providers in a single, high-performance interface.
 
-Beyond chat, LibreChat provides AI Agents, Model Context Protocol (MCP) support, Artifacts, Code Interpreter, custom actions, conversation search, and enterprise-ready multi-user authentication.
+Beyond chat, ra1 provides AI Agents, dual-mode Interactive Voice, ComfyUI & SD Image Generation, Hybrid BM25+Vector RAG, Model Context Protocol (MCP) support with Dynamic Valves, Artifacts, Code Interpreter, and enterprise-ready security.
 
 Open source, actively developed, and built for anyone who values control over their AI infrastructure.
 
