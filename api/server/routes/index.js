@@ -90,4 +90,5 @@ module.exports = {
   categories,
   staticRoute,
   accessPermissions,
+  images: require('./images'),
 };

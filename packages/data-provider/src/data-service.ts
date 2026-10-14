@@ -1868,3 +1868,55 @@ export function revokeScheduleMCPConsent(id: string, expectedRevision: string): 
     data: { expectedRevision },
   });
 }
+
+export interface TImageGeneratePayload {
+  prompt: string;
+  negative_prompt?: string;
+  size?: string;
+  width?: number;
+  height?: number;
+  steps?: number;
+  cfg_scale?: number;
+  sampler?: string;
+  seed?: number;
+  model?: string;
+  engine?: 'comfyui' | 'automatic1111' | 'openai' | 'auto';
+}
+
+export interface TImageGenerateResponse {
+  success: boolean;
+  file_id?: string;
+  filepath: string;
+  filename: string;
+  url: string;
+  base64?: string;
+  metadata: {
+    prompt: string;
+    negative_prompt?: string;
+    model?: string;
+    seed: number;
+    steps: number;
+    sampler: string;
+    cfg_scale: number;
+    engine: 'comfyui' | 'automatic1111' | 'openai';
+    width: number;
+    height: number;
+  };
+}
+
+export interface TImageConfigResponse {
+  engines: {
+    comfyui: boolean;
+    automatic1111: boolean;
+    openai: boolean;
+  };
+  default_engine: string;
+}
+
+export function generateImage(payload: TImageGeneratePayload): Promise<TImageGenerateResponse> {
+  return request.post(endpoints.imagesGenerate(), payload);
+}
+
+export function getImageConfig(): Promise<TImageConfigResponse> {
+  return request.get(endpoints.imagesConfig());
+}

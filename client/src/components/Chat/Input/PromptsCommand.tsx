@@ -80,9 +80,25 @@ function PromptsCommand({
   const prompts = useMemo(() => data?.promptGroups, [data]);
   const promptsMap = useMemo(() => data?.promptsMap, [data]);
 
+  const imagineOption: PromptOption = useMemo(
+    () => ({
+      id: 'cmd_imagine',
+      name: 'imagine',
+      label: '/imagine',
+      value: 'imagine',
+      type: 'command',
+      description: 'Synthesize images via local ComfyUI, Automatic1111, or DALL-E',
+    }),
+    [],
+  );
+
+  const commandOptions = useMemo(() => {
+    return [imagineOption, ...(prompts ?? [])];
+  }, [imagineOption, prompts]);
+
   const { open, setOpen, searchValue, setSearchValue, matches } = useCombobox({
     value: '',
-    options: prompts ?? [],
+    options: commandOptions,
   });
 
   const initInputRef = useInitPopoverInput({
@@ -105,6 +121,14 @@ function PromptsCommand({
 
       if (textAreaRef.current) {
         removeCharIfLast(textAreaRef.current, commandChar);
+      }
+
+      if (mention.id === 'cmd_imagine') {
+        if (textAreaRef.current) {
+          textAreaRef.current.value = '/imagine ';
+          textAreaRef.current.focus();
+        }
+        return;
       }
 
       const group = promptsMap?.[mention.id];

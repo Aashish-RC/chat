@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Skeleton } from '@librechat/client';
 import { apiBaseUrl } from 'librechat-data-provider';
 import { cn, toAbsoluteFilePath } from '~/utils';
+import GeneratedImageCard from './GeneratedImageCard';
 import DialogImage from './DialogImage';
 
 /** Max display height for chat images (Tailwind JIT class) */
@@ -94,6 +95,30 @@ const Image = ({
   const hasDimensions = !!(dims?.width && dims?.height);
   const heightStyle = hasDimensions ? computeHeightStyle(dims.width, dims.height) : undefined;
   const showSkeleton = hasDimensions && !paintedUrls.has(absoluteImageUrl);
+
+  if (args && (args.seed !== undefined || args.sampler !== undefined || args.steps !== undefined)) {
+    return (
+      <div className={alignRight ? 'ml-auto' : undefined}>
+        <GeneratedImageCard
+          src={absoluteImageUrl}
+          metadata={{
+            prompt: (args.prompt as string) || altText,
+            negative_prompt: args.negative_prompt as string | undefined,
+            model: (args.model as string) || undefined,
+            seed: Number(args.seed ?? 0),
+            steps: Number(args.steps ?? 20),
+            sampler: String(args.sampler ?? 'Euler a'),
+            cfg_scale: Number(args.cfg_scale ?? 7.0),
+            engine: (args.engine as 'comfyui' | 'automatic1111' | 'openai') || 'automatic1111',
+            width: width || dims?.width || 512,
+            height: height || dims?.height || 512,
+          }}
+          altText={altText}
+          className={className}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={alignRight ? 'ml-auto' : undefined}>
