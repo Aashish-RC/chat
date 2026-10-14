@@ -1,6 +1,7 @@
 import React, { memo, useMemo, useState, useCallback } from 'react';
 import * as Ariakit from '@ariakit/react';
-import { Mic, Plus, Check, Square, ChevronDown } from 'lucide-react';
+import { useRecoilState } from 'recoil';
+import { Mic, Plus, Check, Square, ChevronDown, Sparkles } from 'lucide-react';
 import { IconButton, TooltipAnchor, SendIcon } from '@librechat/client';
 import type { TConversation, EModelEndpoint, EndpointFileConfig } from 'librechat-data-provider';
 import type { PaletteEntry, PaletteMode } from '~/hooks/Input/usePaletteEntries';
@@ -8,6 +9,7 @@ import type { Dictation } from '~/hooks/Input/useDictation';
 import type { ExtendedFile, FileSetter } from '~/common';
 import usePaletteEntries from '~/hooks/Input/usePaletteEntries';
 import MCPConfigDialog from '~/components/MCP/MCPConfigDialog';
+import ImageGenModal from '../ImageGenModal';
 import useToolFavorites from '~/hooks/Input/useToolFavorites';
 import useElementSize from '~/hooks/Generic/useElementSize';
 import useChipPacking from '~/hooks/Input/useChipPacking';
@@ -18,6 +20,7 @@ import Thinking from './Thinking';
 import Palette from './Palette';
 import { cn } from '~/utils';
 import Chip from './Chip';
+import store from '~/store';
 
 /** Stable identity so the memo below is not defeated when tools are hidden. */
 const EMPTY_ENTRIES: PaletteEntry[] = [];
@@ -208,6 +211,7 @@ interface BarProps {
   actionSlot: React.ReactNode;
   /** Owned by `ChatForm`, which also paints the trace over the textarea. */
   dictation: Dictation;
+  onStartVoiceCall?: () => void;
 }
 
 /**
@@ -239,6 +243,7 @@ function Bar({
   approvalSlot,
   actionSlot,
   dictation,
+  onStartVoiceCall,
 }: BarProps) {
   const localize = useLocalize();
   const context = useBadgeRowContext();
@@ -281,6 +286,21 @@ function Bar({
   const { ref: rowRef, width: rowWidth } = useElementSize<HTMLDivElement>();
   const { ref: plusRef, width: plusWidth } = useElementSize<HTMLSpanElement>();
   const { ref: controlsRef, width: controlsWidth } = useElementSize<HTMLDivElement>();
+  const [voiceInterfaceMode, setVoiceInterfaceMode] = useRecoilState(store.voiceInterfaceMode);
+  const [voiceModeMenuOpen, setVoiceModeMenuOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+
+  const handleMicClick = useCallback(() => {
+    if (dictation.active || dictation.transcribing) {
+      dictation.stopToComposer();
+      return;
+    }
+    if (voiceInterfaceMode === 'fullscreen') {
+      onStartVoiceCall?.();
+    } else {
+      dictation.start();
+    }
+  }, [dictation, voiceInterfaceMode, onStartVoiceCall]);
 
   /* A row of their own once they need one, and it runs the full width of the
      composer (the `+` corner included), since the buttons are on the row below
@@ -496,29 +516,79 @@ function Bar({
             </div>
           </div>
           {approvalSlot}
-          <span role="status" aria-live="polite" className="sr-only">
-            {dictationStatus}
-          </span>
-          {showSpeech && (
+          {!dictating && (
             <RoundButton
-              label={dictating ? localize('com_ui_stop') : localize('com_ui_use_micrphone')}
-              onClick={dictating ? dictation.stopToComposer : dictation.start}
-              /* Once the take is handed to the transcriber there is nothing left
-                 to stop, and pressing either of these again would only rewrite
-                 how a take that has already been committed gets spent. Cancel,
-                 on the `+`, stays live: an external transcription in flight can
-                 still be thrown away. */
-              disabled={
-                dictation.transcribing ||
-                (!dictating && (speechDisabled || dictation.startDisabled))
-              }
+              label={localize('com_ui_imagine') || 'Generate Image (/imagine)'}
+              onClick={() => setIsImageModalOpen(true)}
             >
-              {dictating ? (
-                <Square className="size-4 fill-current" aria-hidden="true" />
-              ) : (
-                <Mic className="size-5" aria-hidden="true" />
-              )}
+              <Sparkles className="size-5" aria-hidden="true" />
             </RoundButton>
+          )}
+          {showSpeech && (
+            <Ariakit.MenuProvider open={voiceModeMenuOpen} setOpen={setVoiceModeMenuOpen} placement="top-end">
+              <div className="relative inline-flex items-center">
+                <RoundButton
+                  label={
+                    dictating
+                      ? localize('com_ui_stop')
+                      : `${localize('com_ui_use_micrphone')} (${voiceInterfaceMode === 'fullscreen' ? localize('com_nav_voice_mode_fullscreen') : localize('com_nav_voice_mode_side')})`
+                  }
+                  onClick={handleMicClick}
+                  /* Once the take is handed to the transcriber there is nothing left
+                     to stop, and pressing either of these again would only rewrite
+                     how a take that has already been committed gets spent. Cancel,
+                     on the `+`, stays live: an external transcription in flight can
+                     still be thrown away. */
+                  disabled={
+                    dictation.transcribing ||
+                    (!dictating && (speechDisabled || dictation.startDisabled))
+                  }
+                >
+                  {dictating ? (
+                    <Square className="size-4 fill-current" aria-hidden="true" />
+                  ) : (
+                    <Mic className="size-5" aria-hidden="true" />
+                  )}
+                </RoundButton>
+                {!dictating && (
+                  <Ariakit.MenuButton
+                    aria-label={localize('com_ui_voice_mode_switch')}
+                    data-testid="voice-mode-menu-button"
+                    className="text-text-secondary hover:text-text-primary -ml-2 p-0.5 rounded transition-colors focus-visible:outline-hidden"
+                  >
+                    <ChevronDown className="size-3" aria-hidden="true" />
+                  </Ariakit.MenuButton>
+                )}
+              </div>
+              <Ariakit.Menu
+                portal
+                gutter={6}
+                unmountOnHide
+                data-testid="voice-mode-menu"
+                className="animate-composer-popover border-border-menu bg-surface-menu rounded-theme-menu-panel z-50 min-w-[13rem] border p-1 shadow-lg outline-hidden"
+              >
+                <Ariakit.MenuItem
+                  role="menuitemradio"
+                  aria-checked={voiceInterfaceMode === 'fullscreen'}
+                  data-testid="voice-mode-fullscreen"
+                  onClick={() => setVoiceInterfaceMode('fullscreen')}
+                  className="text-text-secondary data-[active-item]:bg-surface-hover data-[active-item]:text-text-primary flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-xs"
+                >
+                  <span>{localize('com_nav_voice_mode_fullscreen')}</span>
+                  {voiceInterfaceMode === 'fullscreen' && <Check className="size-3.5 shrink-0" aria-hidden="true" />}
+                </Ariakit.MenuItem>
+                <Ariakit.MenuItem
+                  role="menuitemradio"
+                  aria-checked={voiceInterfaceMode === 'side'}
+                  data-testid="voice-mode-side"
+                  onClick={() => setVoiceInterfaceMode('side')}
+                  className="text-text-secondary data-[active-item]:bg-surface-hover data-[active-item]:text-text-primary flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-xs"
+                >
+                  <span>{localize('com_nav_voice_mode_side')}</span>
+                  {voiceInterfaceMode === 'side' && <Check className="size-3.5 shrink-0" aria-hidden="true" />}
+                </Ariakit.MenuItem>
+              </Ariakit.Menu>
+            </Ariakit.MenuProvider>
           )}
           {dictating ? (
             <RoundButton
@@ -541,6 +611,10 @@ function Bar({
           storageContextKey={context?.storageContextKey}
         />
       )}
+      <ImageGenModal
+        isOpen={isImageModalOpen}
+        onOpenChange={setIsImageModalOpen}
+      />
     </div>
   );
 }

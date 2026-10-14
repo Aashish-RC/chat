@@ -72,6 +72,7 @@ import useSteering from '~/hooks/Chat/useSteering';
 import CodeApprovalMenu from './CodeApprovalMenu';
 import TextareaHeader from './TextareaHeader';
 import PromptsCommand from './PromptsCommand';
+import ImageGenModal from './ImageGenModal';
 import { submitFromComposer } from './submit';
 import SkillsCommand from './SkillsCommand';
 import AutoPlayAudio from './AutoPlayAudio';
@@ -86,6 +87,7 @@ import Queue from './Composer/Queue';
 import Tray from './Composer/Tray';
 import Bar from './Composer/Bar';
 import Mention from './Mention';
+import { CallOverlay, VoiceRecordingBar } from './Voice';
 import store from '~/store';
 
 export function toRestoredComposerFile(
@@ -208,6 +210,10 @@ const ChatForm = memo(function ChatForm({
   const chatDirection = useRecoilValue(store.chatDirection);
   const automaticPlayback = useRecoilValue(store.automaticPlayback);
   const maximizeChatSpace = useRecoilValue(store.maximizeChatSpace);
+  const voiceInterfaceMode = useRecoilValue(store.voiceInterfaceMode);
+  const [isCallOverlayOpen, setIsCallOverlayOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imaginePrompt, setImaginePrompt] = useState('');
   const { isTemporary } = useChatSettings();
 
   const [showStopButton, setShowStopButton] = useRecoilState(store.showStopButtonByIndex(index));
@@ -731,8 +737,17 @@ const ChatForm = memo(function ChatForm({
    *  queued follow-up about to start), then an ordinary send: the same route
    *  for typed, dictated, and shortcut-bound submissions. */
   const submitComposerText = useCallback(
-    (data: { text: string }): false | void =>
-      submitFromComposer(
+    (data: { text: string }): false | void => {
+      const trimmed = data.text?.trim() ?? '';
+      if (/^\/imagine\b/i.test(trimmed)) {
+        const promptAfterCommand = trimmed.replace(/^\/imagine\s*/i, '');
+        setImaginePrompt(promptAfterCommand);
+        setIsImageModalOpen(true);
+        methods.reset();
+        clearAllDrafts(getPendingDraftId(index));
+        return;
+      }
+      return submitFromComposer(
         {
           answerMode,
           steering,
@@ -746,7 +761,8 @@ const ChatForm = memo(function ChatForm({
           reset: () => methods.reset(),
         },
         data,
-      ),
+      );
+    },
     [answerMode, steering, submitMessage, methods, index],
   );
 
@@ -886,7 +902,17 @@ const ChatForm = memo(function ChatForm({
                 onClose={pastedTextEdit.closeEditor}
                 onSave={pastedTextEdit.saveEdit}
               />
-              {endpoint && (
+              {voiceInterfaceMode === 'side' && (dictation.active || dictation.transcribing) ? (
+                <div className="p-3 w-full">
+                  <VoiceRecordingBar
+                    recording={dictation.active}
+                    transcribing={dictation.transcribing}
+                    durationSeconds={dictation.elapsed}
+                    onCancel={dictation.cancel}
+                    onConfirm={dictation.stopAndSend}
+                  />
+                </div>
+              ) : endpoint ? (
                 <div className={cn('flex', isRTL ? 'flex-row-reverse' : 'flex-row')}>
                   <div
                     className={cn(
@@ -973,7 +999,7 @@ const ChatForm = memo(function ChatForm({
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
               {(isPreparingFromUrl || urlSettingsError) && (
                 <p role="status" className="text-text-secondary px-5 pb-2 text-sm">
                   {localize(urlSettingsError ? 'com_ui_url_settings_failed' : 'com_ui_sending')}
@@ -1040,6 +1066,7 @@ const ChatForm = memo(function ChatForm({
                   }
                   actionSlot={actionSlot}
                   hasAddedConversation={addedConvo != null}
+                  onStartVoiceCall={() => setIsCallOverlayOpen(true)}
                 />
                 <ToolDialogs />
               </BadgeRowProvider>
@@ -1065,6 +1092,20 @@ const ChatForm = memo(function ChatForm({
           />
         </div>
       </div>
+      <CallOverlay
+        isOpen={isCallOverlayOpen}
+        onClose={() => setIsCallOverlayOpen(false)}
+        dictation={dictation}
+        isSubmitting={isSubmitting}
+        stopGenerating={stopGenerating}
+        index={index}
+        modelName={conversation?.model ?? conversation?.endpoint ?? undefined}
+      />
+      <ImageGenModal
+        isOpen={isImageModalOpen}
+        onOpenChange={setIsImageModalOpen}
+        initialPrompt={imaginePrompt}
+      />
     </form>
   );
 });

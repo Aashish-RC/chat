@@ -108,6 +108,10 @@ const localStorageAtoms = {
   // Speech settings
   conversationMode: atomWithLocalStorage('conversationMode', false),
   advancedMode: atomWithLocalStorage('advancedMode', false),
+  voiceInterfaceMode: atomWithLocalStorage<'fullscreen' | 'side'>(
+    'voiceInterfaceMode',
+    'fullscreen',
+  ),
 
   speechToText: atomWithLocalStorage('speechToText', true),
   engineSTT: atomWithLocalStorage('engineSTT', 'browser', (engine) =>

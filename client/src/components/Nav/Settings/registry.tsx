@@ -21,6 +21,7 @@ import {
   AutoTranscribeAudioSwitch,
   AutoSendTextSelector,
   DecibelSelector,
+  VoiceInterfaceModeSelector,
 } from '../SettingsTabs/Speech/STT';
 import DisplayUsernameMessages from '../SettingsTabs/Account/DisplayUsernameMessages';
 import ConversationModeSwitch from '../SettingsTabs/Speech/ConversationModeSwitch';
@@ -554,6 +555,13 @@ export const registry: SettingEntry[] = [
     section: 'stt',
     labelKey: 'com_nav_speech_to_text',
     Component: SpeechToTextSwitch,
+  },
+  {
+    id: 'voiceInterfaceMode',
+    tab: SPEECH,
+    section: 'stt',
+    labelKey: 'com_nav_voice_interface_mode',
+    Component: VoiceInterfaceModeSelector,
   },
   {
     id: 'engineSTT',
