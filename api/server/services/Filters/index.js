@@ -1,0 +1,31 @@
+const {
+  FilterManager,
+  defaultFilterManager,
+  createDefaultFilterManager,
+  createInletFilterMiddleware,
+  applyInletFilters,
+  applyOutletFilters,
+  createPIIFilter,
+  createModerationFilter,
+  createDecoratorFilter,
+  redactText,
+  checkBlocked,
+  redactBlocked,
+  FilterBlockError,
+} = require('@librechat/api');
+
+module.exports = {
+  FilterManager,
+  defaultFilterManager,
+  createDefaultFilterManager,
+  createInletFilterMiddleware,
+  applyInletFilters,
+  applyOutletFilters,
+  createPIIFilter,
+  createModerationFilter,
+  createDecoratorFilter,
+  redactText,
+  checkBlocked,
+  redactBlocked,
+  FilterBlockError,
+};

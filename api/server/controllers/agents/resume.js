@@ -59,6 +59,7 @@ const {
   applyForcedTemporaryRequest,
   persistForcedTemporaryMetadata,
   announceReply,
+  applyOutletFilters,
 } = require('@librechat/api');
 const { disposeClient } = require('~/server/cleanup');
 const { decryptMetadata } = require('~/server/services/ActionService');
@@ -564,6 +565,13 @@ async function finalizeResumedTurn({
   }
   let terminalPublicationStarted = false;
   try {
+    if (responseMessage && typeof responseMessage.text === 'string') {
+      const outletResult = await applyOutletFilters(
+        { text: responseMessage.text, user: req?.user, metadata: { conversationId, messageId: responseMessage.messageId } },
+        { req, userId, conversationId },
+      );
+      responseMessage.text = outletResult.text;
+    }
     const savedResponseMessage = await saveMessage(
       {
         userId,

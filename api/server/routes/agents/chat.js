@@ -9,6 +9,7 @@ const {
   applyResumeRequest,
   GenerationJobManager,
   getSafeErrorMetadata,
+  createInletFilterMiddleware,
 } = require('@librechat/api');
 const { PermissionTypes, Permissions, PermissionBits } = require('librechat-data-provider');
 const {
@@ -62,6 +63,7 @@ const restoreResumeContext = async (req, res, next) => {
 };
 
 router.use(restoreResumeContext);
+router.use(createInletFilterMiddleware());
 router.use(
   createMessageFilterPii({
     onTraversalFailure: reportLocatorTraversalFailure,

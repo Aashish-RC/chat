@@ -66,6 +66,8 @@ const {
   settleExistingRowsBeforeErrorTurn,
   resolveDisconnectSnapshotMode,
   markAbortedCompactionContent,
+  applyInletFilters,
+  applyOutletFilters,
 } = require('@librechat/api');
 const { disposeClient } = require('~/server/cleanup');
 const {
@@ -778,6 +780,7 @@ function rejectMissingTriggerParentMessageId(res, generationProtocolVersion) {
  */
 const ResumableAgentController = async (req, res, next, initializeClient, addTitle) => {
   applyForcedTemporaryRequest(req);
+  await applyInletFilters(req);
   const startupTelemetry = getAgentStartupTelemetry(req);
   let generationProtocolVersion = negotiateNewGenerationProtocol(req);
   const {
@@ -3104,6 +3107,13 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
          * save resolved falsy. Re-save the terminal row idempotently and require
          * the returned durable row before publishing the normal FINAL. */
         const responseIsUnfinished = terminalWasAborted || preemptIncomplete || stepLimitReached;
+        if (response && typeof response.text === 'string') {
+          const outletResult = await applyOutletFilters(
+            { text: response.text, user: req?.user, metadata: { conversationId, messageId: response.messageId } },
+            { req, userId, conversationId, endpoint: endpointOption?.endpoint },
+          );
+          response.text = outletResult.text;
+        }
         const savedResponseMessage = await saveMessage(
           reqCtx,
           {
