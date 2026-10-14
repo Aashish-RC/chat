@@ -164,6 +164,10 @@ export type ToolOptions = {
    * @default false
    */
   describe_intent?: boolean;
+  /**
+   * Custom parameter presets and dynamic schema valves for this tool.
+   */
+  valves?: Record<string, unknown>;
 };
 
 /**

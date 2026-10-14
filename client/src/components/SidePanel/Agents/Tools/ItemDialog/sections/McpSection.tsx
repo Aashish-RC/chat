@@ -111,6 +111,7 @@ export default function McpSection({ item }: Props) {
     toggleBackgroundAll,
     toggleIntentAll,
     setToolApprovalMode,
+    setToolValves,
   } = useMCPToolOptions();
 
   const serverName = item.server.serverName;
@@ -627,6 +628,8 @@ export default function McpSection({ item }: Props) {
                   onToggleProgrammatic={() => toggleToolProgrammatic(tool.tool_id)}
                   onToggleBackground={() => toggleToolBackground(tool.tool_id)}
                   onToggleIntent={() => toggleToolIntent(tool.tool_id)}
+                  valves={formToolOptions?.[tool.tool_id]?.valves}
+                  onSaveValves={(valves) => setToolValves(tool.tool_id, valves)}
                 />
               ))}
             </div>

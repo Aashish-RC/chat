@@ -45,6 +45,7 @@ interface UseMCPToolOptionsReturn {
   toggleProgrammaticAll: (tools: AgentToolType[]) => void;
   toggleBackgroundAll: (tools: AgentToolType[]) => void;
   toggleIntentAll: (tools: AgentToolType[]) => void;
+  setToolValves: (toolId: string, valves: Record<string, unknown>) => void;
 }
 
 /**
@@ -298,9 +299,26 @@ export default function useMCPToolOptions(): UseMCPToolOptionsReturn {
     [getValues, setValue],
   );
 
+  const setToolValves = useCallback(
+    (toolId: string, valves: Record<string, unknown>) => {
+      const options = getValues('tool_options') ?? {};
+      const currentToolOpts = options[toolId] ?? {};
+      const updatedOptions = {
+        ...options,
+        [toolId]: {
+          ...currentToolOpts,
+          valves,
+        },
+      };
+      setValue('tool_options', updatedOptions, { shouldDirty: true });
+    },
+    [getValues, setValue],
+  );
+
   return {
     formToolOptions,
     setToolApprovalMode,
+    setToolValves,
     isToolDeferred: defer.isSet,
     isToolProgrammatic,
     isToolBackground: background.isSet,

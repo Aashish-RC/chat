@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@librechat/client';
-import { Check, Clock, Code2, Captions, Info, Zap } from 'lucide-react';
+import { Check, Clock, Code2, Captions, Info, Zap, SlidersHorizontal } from 'lucide-react';
 import type { AgentToolType, AgentToolApprovalMode } from 'librechat-data-provider';
+import type { JSONSchema } from '~/components/Tools/Valves';
+import { ValvesModal } from '~/components/Tools/Valves';
 import ApprovalOption from './ApprovalOption';
 import OptionToggle from './OptionToggle';
 import { useLocalize } from '~/hooks';
@@ -32,6 +34,8 @@ interface MCPToolItemProps {
   approvalMode?: AgentToolApprovalMode;
   approvalsEnabled?: boolean;
   onApprovalModeChange?: (mode?: AgentToolApprovalMode) => void;
+  valves?: Record<string, unknown>;
+  onSaveValves?: (valves: Record<string, unknown>) => void;
 }
 
 const iconButton = 'size-6 rounded-md';
@@ -59,9 +63,24 @@ export default function MCPToolItem({
   approvalAgentId,
   approvalsEnabled,
   onApprovalModeChange,
+  valves,
+  onSaveValves,
 }: MCPToolItemProps) {
   const localize = useLocalize();
   const [expanded, setExpanded] = useState(false);
+  const [valvesOpen, setValvesOpen] = useState(false);
+
+  const valvesSchema = useMemo(() => {
+    const raw =
+      (tool as unknown as { inputSchema?: JSONSchema }).inputSchema ??
+      (tool.metadata as unknown as { parameters?: JSONSchema; inputSchema?: JSONSchema; valves?: JSONSchema })?.parameters ??
+      (tool.metadata as unknown as { inputSchema?: JSONSchema })?.inputSchema ??
+      (tool.metadata as unknown as { valves?: JSONSchema })?.valves;
+    if (raw && typeof raw === 'object') {
+      return raw;
+    }
+    return null;
+  }, [tool]);
 
   const description = tool.metadata.description?.trim();
   const detailsId = `mcp-tool-details-${tool.tool_id}`;
@@ -151,6 +170,21 @@ export default function MCPToolItem({
               disabled={!approvalsEnabled}
             />
           )}
+          {onSaveValves && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setValvesOpen(true)}
+              aria-label={localize('com_ui_valves_tune')}
+              className={cn(
+                iconButton,
+                'text-text-secondary hover:text-text-primary',
+              )}
+              title={localize('com_ui_valves_tune')}
+            >
+              <SlidersHorizontal className="size-4" aria-hidden="true" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -189,6 +223,16 @@ export default function MCPToolItem({
           </div>
         </div>
       </div>
+      {valvesOpen && (
+        <ValvesModal
+          isOpen={valvesOpen}
+          onOpenChange={setValvesOpen}
+          toolName={tool.metadata.name}
+          schema={valvesSchema}
+          initialValues={valves}
+          onSave={onSaveValves}
+        />
+      )}
     </div>
   );
 }
